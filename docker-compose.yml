@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./sentriai
+      dockerfile: backend/Dockerfile
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./.env
+    environment:
+      - FLASK_ENV=production
+    volumes:
+      - ./sentriai/backend/output:/app/output
+      - ./sentriai/backend/temp:/app/temp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - sentriai-net
+
+  frontend:
+    build:
+      context: ./sentriai
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - sentriai-net
+    volumes:
+      - ./sentriai/frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+networks:
+  sentriai-net:
+    driver: bridge
